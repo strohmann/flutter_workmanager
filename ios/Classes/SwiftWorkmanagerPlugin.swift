@@ -107,19 +107,31 @@ extension SwiftWorkmanagerPlugin {
             switch call.method {
             case BackgroundChannel.initialized:
                 result(true)    // Agree to Flutter's method invocation
-                
-                backgroundMethodChannel?.invokeMethod(BackgroundChannel.iOSPerformFetch, arguments: BackgroundChannel.iOSPerformFetchArguments, result: { flutterResult in
-                    cleanupFlutterResources()
-                    let fetchSessionCompleted = Date()
-                    let result: UIBackgroundFetchResult = (flutterResult as? Bool ?? false) ? .newData : .failed
-                    let fetchDuration = fetchSessionCompleted.timeIntervalSince(fetchSessionStart)
-                    logInfo("[\(String(describing: self))] \(#function) -> UIBackgroundFetchResult.\(result) (finished in \(fetchDuration.formatToSeconds()))")
-                    DebugNotificationHelper.showCompletedFetchNotification(identifier: fetchSessionIdentifier,
-                                                                           completedDate: fetchSessionCompleted,
-                                                                           result: result,
-                                                                           elapsedTime: fetchDuration)
-                    completionHandler(result)
-                })
+
+				let appDir = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0];
+				let libDir = NSSearchPathForDirectoriesInDomains(.libraryDirectory, .userDomainMask, true)[0];
+
+				let taskInputParams = [
+                    "\(SwiftWorkmanagerPlugin.identifier).INPUT_DATA":
+						"{\"applicationDocumentsDirectory\":\"" + appDir + "\",\"libraryDirectory\":\"" + libDir + "\"}",
+                    "\(SwiftWorkmanagerPlugin.identifier).DART_TASK": "iOSPerformFetch"
+                ];
+
+                backgroundMethodChannel?.invokeMethod(BackgroundChannel.iOSPerformFetch,
+					arguments: taskInputParams,
+					result: { flutterResult in
+						cleanupFlutterResources()
+						let fetchSessionCompleted = Date()
+						let result: UIBackgroundFetchResult = (flutterResult as? Bool ?? false) ? .newData : .failed
+						let fetchDuration = fetchSessionCompleted.timeIntervalSince(fetchSessionStart)
+						logInfo("[\(String(describing: self))] \(#function) -> UIBackgroundFetchResult.\(result) (finished in \(fetchDuration.formatToSeconds()))")
+						DebugNotificationHelper.showCompletedFetchNotification(identifier: fetchSessionIdentifier,
+																			completedDate: fetchSessionCompleted,
+																			result: result,
+																			elapsedTime: fetchDuration)
+						completionHandler(result)
+					}
+				)
             default:
                 result(WMPError.unhandledMethod(call.method).asFlutterError)
                 cleanupFlutterResources()
