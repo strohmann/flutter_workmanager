@@ -247,7 +247,7 @@ class JsonMapperHelper {
 
   static Map<String, Object> _toInitializeMethodArgument({
     final bool isInDebugMode,
-    final int callbackHandle,
+    final int callbackHandle = 0,
   }) {
     assert(callbackHandle != null);
     return {
